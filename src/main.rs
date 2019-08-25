@@ -1,11 +1,10 @@
 mod snes;
 mod cpu65xx;
+mod cartridge;
 
 extern crate sdl2;
 
 use std::env;
-use std::io::prelude::*;
-use std::fs::File;
 use std::time::Instant;
 use std::time::Duration;
 use sdl2::pixels::Color;
@@ -14,6 +13,7 @@ use sdl2::keyboard::Keycode;
 
 use crate::snes::Snes;
 use crate::cpu65xx::Cpu65xx;
+use crate::cartridge::SnesCartridge;
 
 fn main() -> std::io::Result<()> {
     println!("Hello, snesr!");
@@ -21,10 +21,9 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let rom_file = &args[1];
     println!("opening {}", rom_file);
-    let mut f = File::open(rom_file)?;
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer)?;
-    println!("read {} bytes", buffer.len());
+    let mut snes_cart = SnesCartridge::new(rom_file)?;
+    println!("read {} bytes", snes_cart.rom_file_size());
+    snes_cart.print_info();
 
     // initialize sdl2 window
     let sdl_context = sdl2::init().unwrap();
