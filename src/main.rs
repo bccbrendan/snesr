@@ -1,29 +1,40 @@
 mod snes;
+mod peripherals;
 mod cpu65xx;
 mod cartridge;
+mod memory;
 
 extern crate sdl2;
+#[macro_use]
+extern crate bitfield;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 use std::env;
 use std::time::Instant;
 use std::time::Duration;
+use std::rc::Rc;
+use std::cell::RefCell;
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-
 use crate::snes::Snes;
 use crate::cpu65xx::Cpu65xx;
+use crate::peripherals::Peripherals;
 use crate::cartridge::SnesCartridge;
 
+
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     println!("Hello, snesr!");
     // load ROM file
     let args: Vec<String> = env::args().collect();
     let rom_file = &args[1];
-    println!("opening {}", rom_file);
+    debug!("opening {}", rom_file);
     let mut snes_cart = SnesCartridge::new(rom_file)?;
-    println!("read {} bytes", snes_cart.rom_file_size());
-    snes_cart.print_info();
+    debug!("read {} bytes", snes_cart.rom_file_size());
+    println!("ROM: {}", snes_cart);
 
     // initialize sdl2 window
     let sdl_context = sdl2::init().unwrap();
@@ -40,8 +51,9 @@ fn main() -> std::io::Result<()> {
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     // put together the emulated snes hardware
-    let cpu = Cpu65xx::new();
-    let mut snes = Snes::new(cpu);
+    let peripherals = Rc::new(RefCell::new(Peripherals::new(snes_cart)));
+    let cpu = Cpu65xx::new(peripherals.clone());
+    let mut snes = Snes::new(cpu, peripherals.clone());
     snes.reset();
     let mut i = 0;
     // time each frame ought to take to execute

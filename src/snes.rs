@@ -1,14 +1,18 @@
-
+use std::rc::Rc;
+use std::cell::RefCell;
+use crate::peripherals::Peripherals;
 use crate::cpu65xx::Cpu65xx;
-
-pub struct Snes {
-    cpu: Cpu65xx,
+use crate::memory::Memory;
+pub struct Snes<M: Memory> {
+    cpu: Cpu65xx<M>,
+    peripherals: Rc<RefCell<Peripherals>>,
 }
 
-impl Snes {
-    pub fn new(cpu: Cpu65xx) -> Snes {
+impl<M: Memory> Snes<M> {
+    pub fn new(cpu: Cpu65xx<M>, peripherals: Rc<RefCell<Peripherals>>) -> Snes<M> {
         Snes {
-            cpu,
+            cpu: cpu,
+            peripherals: peripherals,
         }
     }
 
@@ -17,5 +21,6 @@ impl Snes {
     }
 
     pub fn emulate_frame(&mut self) {
+        let cycles = self.cpu.decode();
     }
 }
