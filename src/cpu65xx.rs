@@ -45,6 +45,7 @@ pub struct Cpu65xx<M: Memory> {
     e: bool, // emulation flag for 6502 emulation
 
     mem: Rc<RefCell<M>>,
+    debug_str: String,
 }
 
 pub const RESET_VECTOR: u16 = 0xFFFC;
@@ -63,6 +64,7 @@ impl<M: Memory> Cpu65xx<M> {
             pb: 0,  
             e: true,
             mem: mem,
+            debug_str: String::from(""),
         }
     }
 
@@ -75,6 +77,12 @@ impl<M: Memory> Cpu65xx<M> {
         self.db = 0x00;
         self.pb = 0x00;
         self.e = true;
+    }
+
+    fn log_operation(&mut self, operation: String) {
+        info!("{:21}{:24}A:{:04X} X:{:04X} Y:{:04X} P:{}{}", 
+                self.debug_str, operation, self.a, self.x, self.y, match self.e { true => "E", _ => "e" }, self.p );
+        self.debug_str.clear()
     }
 
     pub fn set_nz_flags(&mut self, val: u16) {
@@ -121,9 +129,8 @@ impl<M: Memory> Cpu65xx<M> {
  
     pub fn decode(&mut self) -> usize {
         let prev_pc = self.pc;
+        self.debug_str = format!("${:02X}/{:04X} ", self.pb, prev_pc);
         let opcode = self.fetch8();
-        debug!("PC: {:02X}{:04X} {}{} opcode: {:02X}",
-            self.pb, prev_pc, self.p, if self.e {'e'} else {'_'}, opcode);
         match opcode {
             //== CPU Memory and Register Transfers
             // Register to Register Transfer
@@ -132,7 +139,7 @@ impl<M: Memory> Cpu65xx<M> {
             //BA        nz----  2   TSX     MOV X,S   x     X=S
             //98        nz----  2   TYA     MOV A,Y   m     A=Y
             //8A        nz----  2   TXA     MOV A,X   m     A=X
-            //9A        ------  2   TXS     MOV S,X   e     S=X
+            0x9A => { self.txs(); 2 }
             //9B        nz----  2   TXY     MOV Y,X   x     Y=X
             //BB        nz----  2   TYX     MOV X,Y   x     X=Y
             //7B        nz----  2   TDC     MOV A,D   16    A=D
@@ -156,8 +163,7 @@ impl<M: Memory> Cpu65xx<M> {
             //B3 nn       nz----      LDA (nn,S),Y MOV A,[[nn+S]+Y]  A=[WORD[nn+S]+Y]
             //A7 nn       nz----      LDA [nn]     MOV A,[FAR[nn]]   A=[FAR[D+nn]]
             //B7 nn       nz----      LDA [nn],y   MOV A,[FAR[nn]+Y] A=[FAR[D+nn]+Y]
-            //A2 nn       nz----  2   LDX #nn      MOV X,nn          X=nn
-            0xA2 => { let o = self.fetch8(); self.ldx(o as u16); 2 }
+            0xA2 => { let o = self.immediate(); self.ldx(o); 2 }
             //A6 nn       nz----  3   LDX nn       MOV X,[nn]        X=[D+nn]
             //B6 nn       nz----  4   LDX nn,Y     MOV X,[nn+Y]      X=[D+nn+Y]
             //AE nn nn    nz----  4   LDX nnnn     MOV X,[nnnn]      X=[DB:nnnn]
@@ -270,13 +276,21 @@ impl<M: Memory> Cpu65xx<M> {
         let pc = self.pc;
         let data = self.read8(self.pb, pc);
         self.pc = self.pc.wrapping_add(1);
+        self.debug_str.push_str(&format!("{:02X} ", data));
         data
     }
+
     fn fetch16(&mut self) -> u16 {
-        let pc = self.pc;
-        let data = self.read16(self.pb, pc);
-        self.pc = self.pc.wrapping_add(2);
+        let mut data = self.fetch8() as u16;
+        data = data | (self.fetch8() as u16) << 8;
         data
+    }
+
+    fn immediate(&mut self) -> u16 {
+        match self.e {
+            true => { self.fetch8() as u16 },
+            _ => { self.fetch16() }
+        }
     }
 
     fn zeropage8(&mut self) -> u8 {
@@ -298,7 +312,12 @@ impl<M: Memory> Cpu65xx<M> {
     //BA        nz----  2   TSX     MOV X,S   x     X=S
     //98        nz----  2   TYA     MOV A,Y   m     A=Y
     //8A        nz----  2   TXA     MOV A,X   m     A=X
-    //9A        ------  2   TXS     MOV S,X   e     S=X
+    fn txs(&mut self) {
+        //9A        ------  2   TXS     MOV S,X   e     S=X
+        self.log_operation("TXS".to_string()); 
+        self.s = self.x;
+    }
+        
     //9B        nz----  2   TXY     MOV Y,X   x     Y=X
     //BB        nz----  2   TYX     MOV X,Y   x     X=Y
     //7B        nz----  2   TDC     MOV A,D   16    A=D
@@ -306,20 +325,20 @@ impl<M: Memory> Cpu65xx<M> {
     //3B        nz----  2   TSC     MOV A,SP  16    A=SP
     //1B        ------  2   TCS     MOV SP,A  e?    SP=A
     /* Load Register from Memory */
-    fn lda(&mut self, value: u16) { debug!("LDA {:04X}", value); self.set_a_with_nz(value) }
-    fn ldx(&mut self, value: u16) { debug!("LDX {:04X}", value); self.set_x_with_nz(value) }
-    fn ldy(&mut self, value: u16) { debug!("LDY {:04X}", value); self.set_y_with_nz(value) }
+    fn lda(&mut self, value: u16) { self.log_operation(format!("LDA {:04X}", value)); self.set_a_with_nz(value) }
+    fn ldx(&mut self, value: u16) { self.log_operation(format!("LDX {:04X}", value)); self.set_x_with_nz(value) }
+    fn ldy(&mut self, value: u16) { self.log_operation(format!("LDY {:04X}", value)); self.set_y_with_nz(value) }
 
     // == CPU Rotate and Shift Instructions
     // ASL Arithmetic Shift Left
     fn asl(&mut self, addr: Option<(u8, u16)>) {
         let old = match addr {
             None => {
-                debug!("ASL A");
+                self.log_operation("ASL A".to_string());
                 self.a
             },
             Some((bank, offset)) => {
-                debug!("ASL {:02X}{:04X}", bank, offset);
+                self.log_operation(format!("ASL {:02X}{:04X}", bank, offset));
                 match self.e {
                     true => self.read8(bank, offset) as u16,
                     false => self.read16(bank, offset),
@@ -367,48 +386,48 @@ impl<M: Memory> Cpu65xx<M> {
     fn jmp(&mut self, pb: u8, pc: u16) {
         self.pb = pb;
         self.pc = pc;
-        debug!("JMP 0x{:02X}{:04X}", pb, pc);
+        self.log_operation(format!("JMP 0x{:02X}{:04X}", pb, pc));
     }
     fn clc(&mut self) {
-        debug!("CLC");
+        self.log_operation("CLC".to_string());
         self.p.set_c(0);
     }
     fn cli(&mut self) {
-        debug!("CLI");
+        self.log_operation("CLI".to_string());
         self.p.set_i(0);
     }
     fn cld(&mut self) {
-        debug!("CLD");
+        self.log_operation("CLD".to_string());
         self.p.set_d(0);
     }
     fn clv(&mut self) {
-        debug!("CLV");
+        self.log_operation("CLV".to_string());
         self.p.set_v(0);
     }
     fn sec(&mut self) {
-        debug!("SEC");
+        self.log_operation("SEC".to_string());
         self.p.set_c(1);
     }
     fn sei(&mut self) {
-        debug!("SEI");
+        self.log_operation("SEI".to_string());
         self.p.set_i(1);
     }
     fn sed(&mut self) {
-        debug!("SED");
+        self.log_operation("SED".to_string());
         self.p.set_d(1);
     }
     fn rep(&mut self, operand: u8) {
-        debug!("REP {:02X}", operand);
+        self.log_operation(format!("REP {:02X}", operand));
         let old_p : u8 = self.p.bit_range(7, 0);
         self.p.set_bit_range(7, 0, old_p & !operand);
     }
     fn sep(&mut self, operand: u8) {
-        debug!("SEP {:02X}", operand);
+        self.log_operation(format!("SEP {:02X}", operand));
         let old_p : u8 = self.p.bit_range(7, 0);
         self.p.set_bit_range(7, 0, old_p | operand);
     }
     fn xce(&mut self) {
-        debug!("XCE");
+        self.log_operation("XCE".to_string());
         let old_e = self.e;
         self.e = match self.p.c() { 1 => true, 0 => false, _ => panic!() };
         self.p.set_c(match old_e { true => 1, false => 0 });

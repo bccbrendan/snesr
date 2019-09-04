@@ -1,0 +1,56 @@
+Issue 1: on my desktop (but not work laptop) the vnc server crashes (similar issue as with nes emulator)
+      restarting xlaunch helps.
+
+benchmark opcodes to start out (courtesy of Geiger's snes debugger):
+
+TODO - info! log in this format for easy comarison.
+
+$00/FF00 78          SEI                     A:0000 X:0000 Y:0000 P:EnvMXdIzc
+$00/FF00 78          SEI                     A:0000 X:0000 Y:0000 P:EnvMXdIzc
+$00/FF00 78          SEI                     A:0000 X:0000 Y:0000 P:EnvMXdIzc
+$00/FF01 18          CLC                     A:0000 X:0000 Y:0000 P:EnvMXdIzc
+$00/FF02 FB          XCE                     A:0000 X:0000 Y:0000 P:EnvMXdIzc
+$00/FF03 5C 00 C0 FD JMP $FDC000[$FD:C000]   A:0000 X:0000 Y:0000 P:envMXdIzC
+$FD/C000 C2 10       REP #$10                A:0000 X:0000 Y:0000 P:envMXdIzC
+$FD/C002 E2 20       SEP #$20                A:0000 X:0000 Y:0000 P:envMxdIzC
+$FD/C004 A2 FF 06    LDX #$06FF              A:0000 X:0000 Y:0000 P:envMxdIzC
+$FD/C007 9A          TXS                     A:0000 X:06FF Y:0000 P:envMxdIzC
+$FD/C008 A9 00       LDA #$00                A:0000 X:06FF Y:0000 P:envMxdIzC
+$FD/C00A 48          PHA                     A:0000 X:06FF Y:0000 P:envMxdIZC
+$FD/C00B AB          PLB                     A:0000 X:06FF Y:0000 P:envMxdIZC
+$FD/C00C C2 20       REP #$20                A:0000 X:06FF Y:0000 P:envMxdIZC
+$FD/C00E A9 00 42    LDA #$4200              A:0000 X:06FF Y:0000 P:envmxdIZC
+$FD/C011 5B          TCD                     A:4200 X:06FF Y:0000 P:envmxdIzC
+$FD/C012 E2 20       SEP #$20                A:4200 X:06FF Y:0000 P:envmxdIzC
+$FD/C014 A9 01       LDA #$01                A:4200 X:06FF Y:0000 P:envMxdIzC
+$FD/C016 85 0D       STA $0D    [$00:420D]   A:4201 X:06FF Y:0000 P:envMxdIzC
+$FD/C018 A9 00       LDA #$00                A:4201 X:06FF Y:0000 P:envMxdIzC
+$FD/C01A 85 00       STA $00    [$00:4200]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C01C 85 0B       STA $0B    [$00:420B]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C01E 85 0C       STA $0C    [$00:420C]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C020 85 02       STA $02    [$00:4202]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C022 85 03       STA $03    [$00:4203]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C024 85 04       STA $04    [$00:4204]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C026 85 05       STA $05    [$00:4205]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C028 85 06       STA $06    [$00:4206]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C02A 85 07       STA $07    [$00:4207]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C02C 85 08       STA $08    [$00:4208]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C02E 85 09       STA $09    [$00:4209]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C030 85 0A       STA $0A    [$00:420A]   A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C032 A9 FF       LDA #$FF                A:4200 X:06FF Y:0000 P:envMxdIZC
+$FD/C034 85 01       STA $01    [$00:4201]   A:42FF X:06FF Y:0000 P:eNvMxdIzC
+$FD/C036 C2 20       REP #$20                A:42FF X:06FF Y:0000 P:eNvMxdIzC
+$FD/C038 A9 00 21    LDA #$2100              A:42FF X:06FF Y:0000 P:eNvmxdIzC
+$FD/C03B 5B          TCD                     A:2100 X:06FF Y:0000 P:envmxdIzC
+$FD/C03C E2 20       SEP #$20                A:2100 X:06FF Y:0000 P:envmxdIzC
+$FD/C03E A9 80       LDA #$80                A:2100 X:06FF Y:0000 P:envMxdIzC
+$FD/C040 85 00       STA $00    [$00:2100]   A:2180 X:06FF Y:0000 P:eNvMxdIzC
+$FD/C042 A9 63       LDA #$63                A:2180 X:06FF Y:0000 P:eNvMxdIzC
+$FD/C044 85 01       STA $01    [$00:2101]   A:2163 X:06FF Y:0000 P:envMxdIzC
+$FD/C046 A9 00       LDA #$00                A:2163 X:06FF Y:0000 P:envMxdIzC
+$FD/C048 85 02       STA $02    [$00:2102]   A:2100 X:06FF Y:0000 P:envMxdIZC
+$FD/C04A 85 03       STA $03    [$00:2103]   A:2100 X:06FF Y:0000 P:envMxdIZC
+$FD/C04C A9 09       LDA #$09                A:2100 X:06FF Y:0000 P:envMxdIZC
+$FD/C04E 85 05       STA $05    [$00:2105]   A:2109 X:06FF Y:0000 P:envMxdIzC
+$FD/C050 A9 00       LDA #$00                A:2109 X:06FF Y:0000 P:envMxdIzC
+$FD/C052 85 06       STA $06    [$00:2106]   A:2100 X:06FF Y:0000 P:envMxdIZC

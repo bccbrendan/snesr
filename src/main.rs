@@ -28,9 +28,9 @@ use crate::cartridge::SnesCartridge;
 fn main() -> std::io::Result<()> {
     env_logger::init();
     println!("Hello, snesr!");
-    // load ROM file
     let args: Vec<String> = env::args().collect();
     let rom_file = &args[1];
+    // load ROM file
     debug!("opening {}", rom_file);
     let mut snes_cart = SnesCartridge::new(rom_file)?;
     debug!("read {} bytes", snes_cart.rom_file_size());

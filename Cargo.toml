@@ -6,6 +6,9 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# to download SDL:
+# sudo apt install libsdl2-dev
+
 [dependencies]
 sdl2 = "0.32"
 bitfield = "0.13.2"
